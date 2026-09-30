@@ -10,9 +10,29 @@
     <header>
       <h1>Mergington High School</h1>
       <h2>Extracurricular Activities</h2>
+      <div id="account-bar">
+        <span id="signed-in-user" class="hidden"></span>
+        <button id="logout-button" class="secondary hidden" type="button">Log out</button>
+      </div>
     </header>
 
     <main>
+      <section id="login-container">
+        <h3>Student Sign In</h3>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Student Email:</label>
+            <input type="email" id="login-email" required placeholder="your-email@mergington.edu" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" required />
+          </div>
+          <button type="submit">Sign In</button>
+        </form>
+        <div id="login-message" class="hidden"></div>
+      </section>
+
       <section id="activities-container">
         <h3>Available Activities</h3>
         <div id="activities-list">
@@ -25,19 +45,20 @@
         <h3>Sign Up for an Activity</h3>
         <form id="signup-form">
           <div class="form-group">
-            <label for="email">Student Email:</label>
-            <input type="email" id="email" required placeholder="your-email@mergington.edu" />
-          </div>
-          <div class="form-group">
             <label for="activity">Select Activity:</label>
             <select id="activity" required>
               <option value="">-- Select an activity --</option>
               <!-- Activity options will be loaded here -->
             </select>
           </div>
-          <button type="submit">Sign Up</button>
+          <button type="submit" id="signup-button">Sign Up</button>
         </form>
         <div id="message" class="hidden"></div>
+      </section>
+
+      <section id="dashboard-container" class="hidden">
+        <h3>My Activities</h3>
+        <div id="my-activities-list"></div>
       </section>
     </main>
 
