@@ -3,6 +3,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const loginContainer = document.getElementById("login-container");
+  const loginForm = document.getElementById("login-form");
+  const loginMessage = document.getElementById("login-message");
+  const dashboardContainer = document.getElementById("dashboard-container");
+  const myActivitiesList = document.getElementById("my-activities-list");
+  const signedInUser = document.getElementById("signed-in-user");
+  const logoutButton = document.getElementById("logout-button");
+  const signupButton = document.getElementById("signup-button");
+
+  let currentUser = null;
+
+  function setMessage(element, text, type) {
+    element.textContent = text;
+    element.className = type;
+    element.classList.remove("hidden");
+  }
+
+  function clearMessage(element) {
+    element.textContent = "";
+    element.className = "hidden";
+  }
+
+  function updateAuthView() {
+    const signedIn = Boolean(currentUser);
+    loginContainer.classList.toggle("hidden", signedIn);
+    dashboardContainer.classList.toggle("hidden", !signedIn);
+    signedInUser.classList.toggle("hidden", !signedIn);
+    logoutButton.classList.toggle("hidden", !signedIn);
+    signupButton.disabled = !signedIn;
+    signedInUser.textContent = signedIn ? `Signed in as ${currentUser.email}` : "";
+  }
+
+  async function loadCurrentUser() {
+    const response = await fetch("/auth/me");
+    if (response.ok) {
+      currentUser = await response.json();
+    }
+    updateAuthView();
+  }
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -12,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -29,8 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <ul class="participants-list">
                 ${details.participants
                   .map(
-                    (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                    (email) => `<li><span class="participant-email">${email}</span></li>`
                   )
                   .join("")}
               </ul>
@@ -56,14 +95,49 @@ document.addEventListener("DOMContentLoaded", () => {
         activitySelect.appendChild(option);
       });
 
-      // Add event listeners to delete buttons
-      document.querySelectorAll(".delete-btn").forEach((button) => {
-        button.addEventListener("click", handleUnregister);
-      });
     } catch (error) {
       activitiesList.innerHTML =
         "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
+    }
+  }
+
+  async function fetchMyActivities() {
+    if (!currentUser) return;
+
+    const response = await fetch("/me/activities");
+    if (!response.ok) return;
+
+    const activities = await response.json();
+    myActivitiesList.innerHTML = activities.length
+      ? activities
+          .map(
+            (activity) => `
+              <article class="dashboard-item">
+                <h4>${activity.name}</h4>
+                <p>${activity.description}</p>
+                <p><strong>Schedule:</strong> ${activity.schedule}</p>
+                <button type="button" data-dashboard-activity="${activity.name}">Unregister</button>
+              </article>`
+          )
+          .join("")
+      : "<p>You are not registered for any activities yet.</p>";
+
+    document.querySelectorAll("[data-dashboard-activity]").forEach((button) => {
+      button.addEventListener("click", () => unregisterActivity(button.dataset.dashboardActivity));
+    });
+  }
+
+  async function unregisterActivity(activity) {
+    const response = await fetch(
+      `/activities/${encodeURIComponent(activity)}/unregister`,
+      { method: "DELETE" }
+    );
+    const result = await response.json();
+    setMessage(messageDiv, response.ok ? result.message : result.detail, response.ok ? "success" : "error");
+    if (response.ok) {
+      await fetchActivities();
+      await fetchMyActivities();
     }
   }
 
@@ -114,14 +188,11 @@ document.addEventListener("DOMContentLoaded", () => {
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = document.getElementById("email").value;
     const activity = document.getElementById("activity").value;
 
     try {
       const response = await fetch(
-        `/activities/${encodeURIComponent(
-          activity
-        )}/signup?email=${encodeURIComponent(email)}`,
+        `/activities/${encodeURIComponent(activity)}/signup`,
         {
           method: "POST",
         }
@@ -136,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Refresh activities list to show updated participants
         fetchActivities();
+        fetchMyActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -155,6 +227,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: document.getElementById("login-email").value,
+        password: document.getElementById("login-password").value,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setMessage(loginMessage, result.detail, "error");
+      return;
+    }
+    currentUser = result;
+    loginForm.reset();
+    clearMessage(loginMessage);
+    updateAuthView();
+    await fetchMyActivities();
+  });
+
+  logoutButton.addEventListener("click", async () => {
+    await fetch("/auth/logout", { method: "POST" });
+    currentUser = null;
+    updateAuthView();
+    myActivitiesList.innerHTML = "";
+  });
+
   // Initialize app
-  fetchActivities();
+  loadCurrentUser().then(() => {
+    fetchActivities();
+    fetchMyActivities();
+  });
 });

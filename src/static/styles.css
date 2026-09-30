@@ -16,12 +16,25 @@ body {
 }
 
 header {
+  position: relative;
   text-align: center;
   padding: 20px 0;
   margin-bottom: 30px;
   background-color: #1a237e;
   color: white;
   border-radius: 5px;
+}
+
+#account-bar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+#signed-in-user {
+  font-size: 14px;
 }
 
 header h1 {
@@ -48,6 +61,11 @@ section {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 500px;
+}
+
+section.hidden,
+.hidden {
+  display: none;
 }
 
 section h3 {
@@ -162,6 +180,37 @@ button {
 
 button:hover {
   background-color: #3949ab;
+}
+
+button:disabled {
+  background-color: #9fa8da;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background-color: transparent;
+  border: 1px solid currentColor;
+  padding: 6px 10px;
+}
+
+.dashboard-item {
+  border-bottom: 1px solid #ddd;
+  padding: 12px 0;
+}
+
+.dashboard-item:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-item h4 {
+  color: #0066cc;
+  margin-bottom: 6px;
+}
+
+.dashboard-item button {
+  font-size: 14px;
+  margin-top: 8px;
+  padding: 7px 10px;
 }
 
 .message {
